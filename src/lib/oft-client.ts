@@ -15,7 +15,7 @@ import { getLayerZeroScanLink } from './utils'
 const IOFT_ABI = [
     'function token() external view returns (address)',
     'function approvalRequired() external view returns (bool)',
-    'function quoteSend(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd, bool payInLzToken) external view returns (uint256 nativeFee, uint256 lzTokenFee)',
+    'function quoteSend(tuple(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd) sendParam, bool payInLzToken) external view returns (uint256 nativeFee, uint256 lzTokenFee)',
     'function send(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd, tuple(uint256 nativeFee, uint256 lzTokenFee) fee, address refundAddress) external payable returns (bytes32 guid)',
     'function decimals() external view returns (uint8)',
     'function symbol() external view returns (string)',
@@ -282,33 +282,26 @@ export class OFTClient {
             console.log('To bytes:', ethers.hexlify(toBytes))
             console.log('Extra options:', extraOptions)
 
-            console.log('Calling quoteSend with individual parameters...')
-            console.log('Parameters:', {
+            // Build sendParam object
+            const sendParam = {
                 dstEid: args.dstEid,
                 to: ethers.hexlify(toBytes),
                 amountLD: amountUnits.toString(),
                 minAmountLD: minAmountUnits.toString(),
-                extraOptions,
+                extraOptions: extraOptions,
                 composeMsg: args.composeMsg || '0x',
                 oftCmd: '0x',
-                payInLzToken: false
-            })
+            }
+
+            console.log('Calling quoteSend with sendParam object...')
+            console.log('Parameters:', sendParam)
 
             const signer = await this.getSigner()
             const oft = new ethers.Contract(args.oftAddress, IOFT_ABI, signer)
             
             console.log('Calling quoteSend...')
-            // Call quoteSend with individual parameters
-            const result = await oft.quoteSend(
-                args.dstEid,
-                ethers.hexlify(toBytes),
-                amountUnits,
-                minAmountUnits,
-                extraOptions,
-                args.composeMsg || '0x',
-                '0x', // oftCmd
-                false // payInLzToken
-            )
+            // Call quoteSend with sendParam object and false for payInLzToken
+            const result = await oft.quoteSend(sendParam, false)
             console.log('Quote result:', result)
 
             return {
@@ -430,13 +423,22 @@ export class OFTClient {
             
             // Check if the token itself implements OFT functions
             const tokenContract = new ethers.Contract(tokenAddress, [
-                'function quoteSend(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd, bool payInLzToken) external view returns (uint256 nativeFee, uint256 lzTokenFee)',
+                'function quoteSend(tuple(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd) sendParam, bool payInLzToken) external view returns (uint256 nativeFee, uint256 lzTokenFee)',
                 'function send(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd, tuple(uint256 nativeFee, uint256 lzTokenFee) fee, address refundAddress) external payable returns (bytes32 guid)'
             ], signer)
             
             // Try to call a simple view function to see if it's an OFT
             try {
-                await tokenContract.quoteSend(30101, '0x0000000000000000000000000000000000000000000000000000000000000000', 1000000, 1000000, '0x', '0x', '0x', false)
+                const testSendParam = {
+                    dstEid: 30101,
+                    to: '0x0000000000000000000000000000000000000000000000000000000000000000',
+                    amountLD: '1000000',
+                    minAmountLD: '1000000',
+                    extraOptions: '0x',
+                    composeMsg: '0x',
+                    oftCmd: '0x'
+                }
+                await tokenContract.quoteSend(testSendParam, false)
                 console.log('Token appears to be an OFT itself')
                 return tokenAddress
             } catch (error) {
