@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { OFTClient } from '../lib'
 import type { QuoteResult, SendResult } from '../lib'
+import { ethers } from 'ethers'
 
 interface TransferFormProps {
     client: OFTClient
@@ -28,8 +29,8 @@ interface TokenInfo {
 
 export function TransferForm({ client, onTransfer, onError }: TransferFormProps) {
     const [transferData, setTransferData] = useState<TransferData>({
-        srcEid: 101,
-        dstEid: 102,
+        srcEid: 30101,
+        dstEid: 30102,
         amount: '3.0',
         to: '0x02F9d861446fFCe632e7553f3eeBf66e3c85667d',
         oftAddress: '',
@@ -57,20 +58,59 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
 
     const getTokenInfo = async (oftAddress: string) => {
         try {
-            // Create a temporary transfer data to get token info
-            const tempData = {
-                ...transferData,
-                oftAddress,
-                amount: transferData.amount || '1.0',
-                to: transferData.to || '0x0000000000000000000000000000000000000000',
-                srcEid: 101,
-                dstEid: 102
+            // Get token info directly from the OFT adapter
+            const signer = await client.getSignerForExternal()
+            const oft = new ethers.Contract(oftAddress, [
+                'function token() external view returns (address)',
+                'function name() external view returns (string)',
+                'function symbol() external view returns (string)',
+                'function decimals() external view returns (uint8)'
+            ], signer)
+            
+            // First try to get the underlying token address
+            let tokenAddress: string
+            let tokenName: string
+            let tokenSymbol: string
+            let tokenDecimals: number
+            
+            try {
+                // Try to get underlying token (for adapters)
+                tokenAddress = await oft.token()
+                console.log('Underlying token address:', tokenAddress)
+                
+                // Get token information from the underlying token
+                const tokenContract = new ethers.Contract(tokenAddress, [
+                    'function name() external view returns (string)',
+                    'function symbol() external view returns (string)',
+                    'function decimals() external view returns (uint8)'
+                ], signer)
+                
+                tokenName = await tokenContract.name()
+                tokenSymbol = await tokenContract.symbol()
+                tokenDecimals = await tokenContract.decimals()
+            } catch {
+                // If that fails, try to get info directly from the OFT (for regular OFTs)
+                console.log('Trying to get token info directly from OFT...')
+                tokenAddress = oftAddress
+                tokenName = await oft.name()
+                tokenSymbol = await oft.symbol()
+                tokenDecimals = await oft.decimals()
             }
             
-            const quoteResult = await client.quoteSend(tempData)
-            if (quoteResult.tokenInfo) {
-                setTokenInfo(quoteResult.tokenInfo)
+            console.log('🎯 Token Details:')
+            console.log('  Name:', tokenName)
+            console.log('  Symbol:', tokenSymbol)
+            console.log('  Decimals:', tokenDecimals)
+            console.log('  Amount to send:', transferData.amount, tokenSymbol)
+            
+            const tokenInfo = {
+                name: tokenName,
+                symbol: tokenSymbol,
+                decimals: tokenDecimals,
+                address: tokenAddress
             }
+            
+            setTokenInfo(tokenInfo)
         } catch (error) {
             console.log('Could not get token info:', error)
             setTokenInfo(null)
@@ -239,9 +279,9 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
                     value={transferData.dstEid}
                     onChange={(e) => handleInputChange('dstEid', parseInt(e.target.value))}
                 >
-                    <option value={101}>Ethereum Mainnet (101)</option>
-                    <option value={102}>BSC Mainnet (102)</option>
-                    <option value={109}>Polygon Mainnet (109)</option>
+                    <option value={30101}>Ethereum Mainnet (30101)</option>
+                    <option value={30102}>BSC Mainnet (30102)</option>
+                    <option value={30109}>Polygon Mainnet (30109)</option>
                 </select>
             </div>
 

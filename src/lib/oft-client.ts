@@ -41,6 +41,13 @@ export class OFTClient {
     }
 
     /**
+     * Get the signer for external use
+     */
+    async getSignerForExternal(): Promise<ethers.JsonRpcSigner> {
+        return await this.getSigner()
+    }
+
+    /**
      * Get OFT configuration
      */
     async getOFTConfig(oftAddress: string): Promise<OFTConfig> {
@@ -393,22 +400,22 @@ export class OFTClient {
     async getCurrentSrcEid(): Promise<number> {
         const chainId = await this.getChainId()
         
-        // Map chainId to EID
+        // Map chainId to LayerZero EID
         const chainIdToEid: Record<number, number> = {
-            1: 101,      // Ethereum Mainnet
-            56: 102,     // BSC Mainnet
-            137: 109,    // Polygon Mainnet
-            43114: 106,  // Avalanche Mainnet
-            42161: 110,  // Arbitrum One
-            10: 111,     // Optimism
-            250: 112,    // Fantom
+            1: 30101,      // Ethereum Mainnet
+            56: 30102,     // BSC Mainnet
+            137: 30109,    // Polygon Mainnet
+            43114: 30106,  // Avalanche Mainnet
+            42161: 30110,  // Arbitrum One
+            10: 30111,     // Optimism
+            250: 30112,    // Fantom
             11155111: 40161, // Ethereum Sepolia
             97: 40102,   // BSC Testnet
         }
         
         const eid = chainIdToEid[chainId]
         if (!eid) {
-            throw new Error(`Unsupported network with chainId ${eid}`)
+            throw new Error(`Unsupported network with chainId ${chainId}`)
         }
         
         return eid
@@ -429,7 +436,7 @@ export class OFTClient {
             
             // Try to call a simple view function to see if it's an OFT
             try {
-                await tokenContract.quoteSend(101, '0x0000000000000000000000000000000000000000000000000000000000000000', 1000000, 1000000, '0x', '0x', '0x', false)
+                await tokenContract.quoteSend(30101, '0x0000000000000000000000000000000000000000000000000000000000000000', 1000000, 1000000, '0x', '0x', '0x', false)
                 console.log('Token appears to be an OFT itself')
                 return tokenAddress
             } catch (error) {
