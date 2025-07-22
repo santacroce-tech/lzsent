@@ -566,6 +566,12 @@ export class OFTClient {
                 oftCmd: '0x'
             }
             
+            console.log('📤 About to send transaction...')
+            console.log('  sendParam:', sendParam)
+            console.log('  fee tuple:', [msgFee.nativeFee.toString(), msgFee.lzTokenFee.toString()])
+            console.log('  refundAddress:', refundAddress)
+            console.log('  value:', msgFee.nativeFee.toString())
+            
             const tx = await oft.send(
                 sendParam, // sendParam tuple
                 [msgFee.nativeFee, msgFee.lzTokenFee], // fee tuple
@@ -574,19 +580,53 @@ export class OFTClient {
                     value: msgFee.nativeFee,
                 }
             )
+            
+            console.log('📤 Transaction sent, waiting for confirmation...')
 
             console.log('✅ Transaction sent successfully!')
             console.log('  Transaction hash:', tx.hash)
+            console.log('  Transaction object:', tx)
             
+            console.log('⏳ Waiting for transaction confirmation...')
             const receipt = await tx.wait()
             console.log('✅ Transaction confirmed!')
+            console.log('  Receipt object:', receipt)
+            console.log('  Receipt status:', receipt.status)
             console.log('  Gas used:', receipt.gasUsed.toString())
             console.log('  Block number:', receipt.blockNumber)
+            console.log('  Transaction hash from receipt:', receipt.transactionHash)
             
-            const txHash = receipt.transactionHash
+            // Check if transaction was successful
+            if (receipt.status === 0) {
+                console.error('❌ Transaction failed (status = 0)')
+                throw new Error('Transaction failed - check the transaction details for more information')
+            }
+            
+            let txHash = receipt.transactionHash
+            console.log('  Transaction hash from receipt:', txHash)
+            
+            // Fallback to tx.hash if receipt.transactionHash is undefined
+            if (!txHash) {
+                console.log('  ⚠️ receipt.transactionHash is undefined, using tx.hash')
+                txHash = tx.hash
+                console.log('  Using tx.hash:', txHash)
+            }
+            
+            console.log('  Final txHash:', txHash)
+            console.log('  txHash type:', typeof txHash)
+            console.log('  txHash length:', txHash ? txHash.length : 'undefined')
+            
+            if (!txHash) {
+                console.error('  ❌ No transaction hash available!')
+                throw new Error('Transaction hash is undefined - transaction may have failed')
+            }
+            
             const scanLink = getLayerZeroScanLink(txHash, args.srcEid >= 40_000 && args.srcEid < 50_000)
+            console.log('  Scan link:', scanLink)
 
-            return { txHash, scanLink }
+            const result = { txHash, scanLink }
+            console.log('  Final result object:', result)
+            return result
         } catch (error) {
             console.error('❌ Transaction failed:', error)
             
@@ -707,8 +747,9 @@ export class OFTClient {
                     errors.push(`Insufficient token balance. Have: ${balance.toString()}, Need: ${amountUnits.toString()}`)
                 }
                 
+                // Don't fail validation for insufficient allowance - this will be handled by the approval flow
                 if (allowance < amountUnits) {
-                    errors.push(`Insufficient allowance. Have: ${allowance.toString()}, Need: ${amountUnits.toString()}`)
+                    console.log('⚠️ Insufficient allowance detected - will be handled by approval flow')
                 }
                 
             } catch (error) {

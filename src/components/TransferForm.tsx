@@ -88,6 +88,7 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
     const handleApproval = async (tokenAddress: string, oftAddress: string, amount: string, decimals: number) => {
         setApprovalStatus('approving')
         addDebugInfo('Requesting token approval...')
+        addDebugInfo('MetaMask popup should appear for approval...')
         
         try {
             const signer = await client.getSignerForExternal()
@@ -98,9 +99,11 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
             
             const amountToSend = ethers.parseUnits(amount, decimals)
             
-            // Request approval
+            // Request approval - this should trigger MetaMask popup
+            addDebugInfo('Sending approval transaction...')
             const approveTx = await tokenContract.approve(oftAddress, amountToSend)
             addDebugInfo(`Approval transaction sent: ${approveTx.hash}`)
+            addDebugInfo('Waiting for approval confirmation...')
             
             // Wait for confirmation
             const receipt = await approveTx.wait()
@@ -385,8 +388,10 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
                         tokenInfo.decimals
                     )
                     
-                    if (!hasSufficientAllowance && approvalStatus === 'needed') {
+                    if (!hasSufficientAllowance) {
                         addDebugInfo('Approval needed before transfer')
+                        addDebugInfo('Requesting approval from MetaMask...')
+                        
                         const approvalSuccess = await handleApproval(
                             tokenInfo.address, 
                             transferData.oftAddress, 
@@ -397,6 +402,10 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
                         if (!approvalSuccess) {
                             throw new Error('Token approval failed. Please try again.')
                         }
+                        
+                        addDebugInfo('✅ Approval successful, proceeding with transfer...')
+                    } else {
+                        addDebugInfo('✅ Sufficient allowance already exists')
                     }
                 } catch (error) {
                     addDebugInfo(`Could not check token balance: ${error}`)
@@ -404,9 +413,20 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
             }
             
             const result = await client.sendTokens(updatedTransferData)
+            console.log('🔍 TransferForm: Received result from sendTokens:', result)
+            console.log('🔍 TransferForm: result.txHash:', result.txHash)
+            console.log('🔍 TransferForm: result.scanLink:', result.scanLink)
+            console.log('🔍 TransferForm: result type:', typeof result)
+            console.log('🔍 TransferForm: result keys:', Object.keys(result))
+            
+            addDebugInfo(`Transfer successful! TX Hash: ${result.txHash}`)
+            addDebugInfo(`LayerZero Scan Link: ${result.scanLink}`)
+            
+            // Call the onTransfer callback to show the result modal
+            console.log('🎉 Transfer completed successfully!')
+            console.log('Transaction result:', result)
             onTransfer(result)
             setQuote(null)
-            addDebugInfo(`Transfer successful! TX Hash: ${result.txHash}`)
         } catch (error) {
             console.error('Transfer error:', error)
             addDebugInfo(`Transfer error: ${error}`)

@@ -11,6 +11,7 @@ function App() {
     const [error, setError] = useState<string | null>(null)
 
     const handleTransfer = (result: SendResult) => {
+        console.log('📋 App: Received transfer result:', result)
         setTransactionResult(result)
         setError(null)
     }
@@ -33,6 +34,7 @@ function App() {
             <header className="app-header">
                 <h1>LZSent</h1>
                 <p>Cross-Chain Token Transfer with LayerZero</p>
+                <p>NO WARRANTY EXPRESSED OR IMPLIED.</p>
             </header>
 
             <main className="app-main">
@@ -64,7 +66,8 @@ function App() {
             </main>
 
             <footer className="app-footer">
-                <p>Powered by LayerZero Protocol</p>
+                <p>Developed by <a href="https://x.com/robsantacroce" target="_blank" rel="noopener noreferrer">Rob Santacroce</a> using LLM's and having some fun. NO WARRANTY EXPRESSED OR IMPLIED.</p>
+                <p>It's important to keep fun in computing. - Alan Perlis</p>
             </footer>
         </div>
     )
