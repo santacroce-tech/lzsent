@@ -32,8 +32,8 @@ function App() {
     return (
         <div className="app">
             <header className="app-header">
-                <h1>LZSent</h1>
-                <p>Cross-Chain Token Transfer with LayerZero</p>
+                <h1>Quantoz Layer Zero Bridge</h1>
+                <p>Cross-Chain Token Bridge with LayerZero</p>
                 <p>NO WARRANTY EXPRESSED OR IMPLIED.</p>
             </header>
 
@@ -66,8 +66,8 @@ function App() {
             </main>
 
             <footer className="app-footer">
-                <p>Developed by <a href="https://x.com/robsantacroce" target="_blank" rel="noopener noreferrer">Rob Santacroce</a> using LLM's and having some fun. NO WARRANTY EXPRESSED OR IMPLIED.</p>
                 <p>It's important to keep fun in computing. - Alan Perlis</p>
+                <p><a href="https://quantoz.com" target="_blank" rel="noopener noreferrer">Quantoz</a></p>
             </footer>
         </div>
     )
