@@ -81,7 +81,6 @@ export function TransferForm({ client, onTransfer, onError }: TransferFormProps)
         error?: string
         selectedAdapter?: AdapterConfig
     }>({ isValid: false })
-    const [tokenInfoLoading, setTokenInfoLoading] = useState(false)
 
     // Get current network on component mount
     useEffect(() => {
