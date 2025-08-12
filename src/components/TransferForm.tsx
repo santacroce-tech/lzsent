@@ -55,6 +55,24 @@ const ADAPTER_CONFIGS: AdapterConfig[] = [
         srcEid: 30109,
         dstEid: 30101,
         description: "EURQ (Polygon → Ethereum)"
+    },
+    {
+        address: "0x302275E3DbaA05917516D7138f2F900a71dD623D",
+        name: "USDQ",
+        srcNetwork: "Ethereum",
+        dstNetwork: "Polygon",
+        srcEid: 30101,
+        dstEid: 30109,
+        description: "USDQ (Ethereum → Polygon)"
+    },
+    {
+        address: "0xA6f85Fc340F326512899D30049531eA239FfB058",
+        name: "USDQ",
+        srcNetwork: "Polygon",
+        dstNetwork: "Ethereum",
+        srcEid: 30109,
+        dstEid: 30101,
+        description: "USDQ (Polygon → Ethereum)"
     }
 ]
 
